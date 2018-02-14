@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+
+    <bean id="jmsConnectionFactory" class="org.apache.activemq.artemis.jms.client.ActiveMQJMSConnectionFactory"
+          destroy-method="close">
+        <constructor-arg value="true"/>
+        <constructor-arg>
+            <bean class="org.apache.activemq.artemis.api.core.TransportConfiguration">
+                <constructor-arg
+                        value="org.apache.activemq.artemis.core.remoting.impl.netty.NettyConnectorFactory"/>
+                <constructor-arg>
+                    <map key-type="java.lang.String" value-type="java.lang.Object">
+                        <entry key="host" value="localhost"/>
+                        <entry key="port" value="61616"/>
+                    </map>
+                </constructor-arg>
+            </bean>
+        </constructor-arg>
+        <property name="useGlobalPools" value="false"/>
+        <property name="reconnectAttempts" value="15"/>
+        <property name="initialConnectAttempts" value="15"/>
+        <property name="user" value="user"/>
+        <property name="password" value="user"/>
+    </bean>
+
+    <bean id="cachedConnectionFactory" class="org.springframework.jms.connection.CachingConnectionFactory"
+          destroy-method="destroy">
+        <property name="targetConnectionFactory" ref="jmsConnectionFactory"/>
+        <property name="sessionCacheSize" value="10"/>
+    </bean>
+
+    <bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory" ref="cachedConnectionFactory"/>
+    </bean>
+
+    <bean id="messageDestination" class="org.apache.activemq.artemis.jms.client.ActiveMQQueue">
+        <constructor-arg index="0" value="JSA-QUEUE"/>
+    </bean>
+
+  <!-- <bean id="ticketService" class="com.springboot.springboot2es.service.TicketService" autowire="byType" />
+
+
+    <bean id="listener" class="com.springboot.springboot2es.jms.ConsumeUserMessage">
+    <property name="ticketService" ref="ticketService"/>
+    </bean>-->
+
+    <bean id="listener" class="com.springboot.springboot2es.jms.ConsumeUserMessage" autowire="byType"/>
+
+    <bean id="listenerContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="jmsConnectionFactory"/>
+        <property name="destination" ref="messageDestination"/>
+        <property name="messageListener" ref="listener"/>
+    </bean>
+
+    <!--
+        <bean id="consumeMessage" class="com.springboot.springboot2es.jms.ConsumeMessage">
+            <property name="destination" ref="messageDestination" />
+            <property name="jmsTemplate" ref="jmsTemplate" />
+        </bean>
+
+        <bean id="consumeUserMessage" class="com.springboot.springboot2es.jms.ConsumeUserMessage">
+            <property name="destination" ref="messageDestination" />
+            <property name="jmsTemplate" ref="jmsTemplate" />
+        </bean>-->
+</beans>
